@@ -1,0 +1,12 @@
+{
+  "name": "@engram/infra",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

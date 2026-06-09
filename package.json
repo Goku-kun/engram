@@ -1,0 +1,31 @@
+{
+  "name": "engram",
+  "version": "0.1.0",
+  "description": "This repository contains a study pack builder using AWS.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "workspaces": [
+    "shared",
+    "infra",
+    "services/*",
+    "web"
+  ],
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Goku-kun/engram.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Goku-kun/engram/issues"
+  },
+  "homepage": "https://github.com/Goku-kun/engram#readme"
+}

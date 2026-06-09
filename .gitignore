@@ -141,3 +141,21 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# dependencies / build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# CDK
+infra/cdk.out/
+
+# Next.js
+web/.next/
+web/out/
+
+# env — never commit secrets
+.env
+.env.*
+!.env.example
+
