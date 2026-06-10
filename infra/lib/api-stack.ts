@@ -50,6 +50,34 @@ export class ApiStack extends cdk.Stack {
       integration: new HttpLambdaIntegration("UploadIntegration", uploadUrlFn),
     });
 
+    const apiFn = new nodejs.NodejsFunction(this, "ApiFn", {
+      entry: path.join(__dirname, "../../services/api/src/handler.ts"),
+      handler: "handler",
+      runtime: lambda.Runtime.NODEJS_22_X,
+      timeout: cdk.Duration.seconds(30),
+      environment: {
+        TABLE_NAME: props.table.tableName,
+      },
+    });
+    props.table.grantReadWriteData(apiFn);
+
+    const apiIntegration = new HttpLambdaIntegration("ApiIntegration", apiFn);
+    httpApi.addRoutes({
+      path: "/decks",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: apiIntegration,
+    });
+    httpApi.addRoutes({
+      path: "/decks/{deckId}",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: apiIntegration,
+    });
+    httpApi.addRoutes({
+      path: "/decks/{deckId}/attempts",
+      methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.POST],
+      integration: apiIntegration,
+    });
+
     new cdk.CfnOutput(this, "ApiUrl", { value: httpApi.apiEndpoint });
   }
 }
