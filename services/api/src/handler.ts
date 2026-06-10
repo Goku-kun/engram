@@ -65,7 +65,7 @@ async function getDeckContents(deckId: string): Promise<DeckContents> {
     new QueryCommand({
       TableName: tableName(),
       KeyConditionExpression: "PK = :pk AND SK >= :card",
-      ExpressionAttributeValues: { pk: deckPk(deckId), ":card": "CARD#" },
+      ExpressionAttributeValues: { ":pk": deckPk(deckId), ":card": "CARD#" },
     }),
   );
 
