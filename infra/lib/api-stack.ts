@@ -44,7 +44,10 @@ export class ApiStack extends cdk.Stack {
       apiName: "engram",
       defaultAuthorizer: authorizer,
       corsPreflight: {
-        allowOrigins: ["http://localhost:3000"],
+        allowOrigins: [
+          "http://localhost:3000",
+          "https://engram-delta.vercel.app/",
+        ],
         allowMethods: [
           apigwv2.CorsHttpMethod.GET,
           apigwv2.CorsHttpMethod.POST,
