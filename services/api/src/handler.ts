@@ -1,6 +1,6 @@
 import type {
-  APIGatewayProxyEventV2,
   APIGatewayProxyResultV2,
+  APIGatewayProxyEventV2WithJWTAuthorizer,
 } from "aws-lambda";
 import { GetCommand, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import {
@@ -9,7 +9,6 @@ import {
   type Card,
   CreateAttemptSchema,
   type Deck,
-  DEMO_USER_ID,
   deckPk,
   deckSk,
   getDocClient,
@@ -26,13 +25,20 @@ function json(statusCode: number, body: unknown): APIGatewayProxyResultV2 {
   };
 }
 
-async function listDecks(): Promise<APIGatewayProxyResultV2> {
+function userIdFromEvent(
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
+): string | undefined {
+  const sub = event.requestContext.authorizer?.jwt?.claims?.sub;
+  return typeof sub === "string" && sub ? sub : undefined;
+}
+
+async function listDecks(userId: string): Promise<APIGatewayProxyResultV2> {
   const result = await getDocClient().send(
     new QueryCommand({
       TableName: tableName(),
       KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
       ExpressionAttributeValues: {
-        ":pk": userPk(DEMO_USER_ID),
+        ":pk": userPk(userId),
         ":sk": "DECK#",
       },
     }),
@@ -45,11 +51,14 @@ async function listDecks(): Promise<APIGatewayProxyResultV2> {
   return json(200, { decks });
 }
 
-async function getDeckMeta(deckId: string): Promise<Deck | undefined> {
+async function getDeckMeta(
+  userId: string,
+  deckId: string,
+): Promise<Deck | undefined> {
   const result = await getDocClient().send(
     new GetCommand({
       TableName: tableName(),
-      Key: { PK: userPk(DEMO_USER_ID), SK: deckSk(deckId) },
+      Key: { PK: userPk(userId), SK: deckSk(deckId) },
     }),
   );
   return result.Item as Deck | undefined;
@@ -78,8 +87,11 @@ async function getDeckContents(deckId: string): Promise<DeckContents> {
   };
 }
 
-async function getDeck(deckId: string): Promise<APIGatewayProxyResultV2> {
-  const found = await getDeckMeta(deckId);
+async function getDeck(
+  userId: string,
+  deckId: string,
+): Promise<APIGatewayProxyResultV2> {
+  const found = await getDeckMeta(userId, deckId);
   if (!found) return json(404, { error: "Deck not found" });
   const {
     PK: _pk,
@@ -102,8 +114,9 @@ async function getDeck(deckId: string): Promise<APIGatewayProxyResultV2> {
 }
 
 async function createAttempt(
+  userId: string,
   deckId: string,
-  event: APIGatewayProxyEventV2,
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> {
   let raw: unknown;
   try {
@@ -119,7 +132,7 @@ async function createAttempt(
     return json(400, { error: "Invalid request", issues: parsed.error.issues });
   }
 
-  const deck = await getDeckMeta(deckId);
+  const deck = await getDeckMeta(userId, deckId);
   if (!deck) return json(404, { error: "Deck not found" });
   if (deck.status !== "ready")
     return json(409, { error: `Deck is ${deck.status}` });
@@ -157,13 +170,19 @@ async function createAttempt(
   return json(201, { attempt, results });
 }
 
-async function listAttempts(deckId: string): Promise<APIGatewayProxyResultV2> {
+async function listAttempts(
+  userId: string,
+  deckId: string,
+): Promise<APIGatewayProxyResultV2> {
+  const deck = await getDeckMeta(userId, deckId);
+  if (!deck) return json(404, { error: "Deck not found" });
+
   const result = await getDocClient().send(
     new QueryCommand({
       TableName: tableName(),
       KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
       ExpressionAttributeValues: { ":pk": deckPk(deckId), ":sk": "ATTEMPT#" },
-      ScanIndexForward: false, // ISO timestamps in the SK → newest first for free
+      ScanIndexForward: false,
     }),
   );
   const items = (result.Items ?? []) as (Attempt & {
@@ -176,20 +195,22 @@ async function listAttempts(deckId: string): Promise<APIGatewayProxyResultV2> {
 }
 
 export async function handler(
-  event: APIGatewayProxyEventV2,
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> {
   const deckId = event.pathParameters?.deckId;
+  const userId = userIdFromEvent(event);
+  if (!userId) return json(401, { error: "Unauthenticated" });
 
   try {
     switch (event.routeKey) {
       case "GET /decks":
-        return await listDecks();
+        return await listDecks(userId);
       case "GET /decks/{deckId}":
-        return await getDeck(deckId!);
+        return await getDeck(userId, deckId!);
       case "POST /decks/{deckId}/attempts":
-        return await createAttempt(deckId!, event);
+        return await createAttempt(userId, deckId!, event);
       case "GET /decks/{deckId}/attempts":
-        return await listAttempts(deckId!);
+        return await listAttempts(userId, deckId!);
       default:
         return json(404, { error: `No route: ${event.routeKey}` });
     }

@@ -1,5 +1,3 @@
-export const DEMO_USER_ID = 'demo-user'; // single user for now; Cognito integration is v2
-
 export const userPk = (userId: string) => `USER#${userId}`;
 export const deckSk = (deckId: string) => `DECK#${deckId}`;
 export const deckPk = (deckId: string) => `DECK#${deckId}`;

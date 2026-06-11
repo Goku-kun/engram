@@ -1,6 +1,6 @@
 {
   "name": "engram",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "This repository contains a study pack builder using AWS.",
   "main": "index.js",
   "directories": {

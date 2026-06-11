@@ -1,11 +1,14 @@
 import * as cdk from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as s3 from "aws-cdk-lib/aws-s3";
+import * as cognito from "aws-cdk-lib/aws-cognito";
 import { Construct } from "constructs";
 
 export class DataStack extends cdk.Stack {
   readonly table: dynamodb.Table;
   readonly bucket: s3.Bucket;
+  readonly userPool: cognito.UserPool;
+  readonly userPoolClient: cognito.UserPoolClient;
 
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -37,7 +40,31 @@ export class DataStack extends cdk.Stack {
       ],
     });
 
+    this.userPool = new cognito.UserPool(this, "Users", {
+      selfSignUpEnabled: true,
+      signInAliases: { email: true },
+      autoVerify: { email: true },
+      passwordPolicy: {
+        minLength: 8,
+        requireDigits: true,
+        requireLowercase: true,
+        requireSymbols: true,
+        requireUppercase: true,
+      },
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    this.userPoolClient = this.userPool.addClient("WebClient", {
+      authFlows: { userSrp: true, userPassword: true },
+      preventUserExistenceErrors: true,
+    });
+
     new cdk.CfnOutput(this, "TableName", { value: this.table.tableName });
     new cdk.CfnOutput(this, "BucketName", { value: this.bucket.bucketName });
+
+    new cdk.CfnOutput(this, "UserPoolId", { value: this.userPool.userPoolId });
+    new cdk.CfnOutput(this, "UserPoolClientId", {
+      value: this.userPoolClient.userPoolClientId,
+    });
   }
 }

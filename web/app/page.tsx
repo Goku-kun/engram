@@ -1,65 +1,158 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import type { Deck } from "@engram/shared";
+import { ApiError, listDecks } from "@/lib/api";
+import { getCurrentUser, signOut } from "@/lib/auth";
+import { UploadForm } from "@/components/UploadForm";
+
+type Shelf =
+  | { phase: "loading" }
+  | { phase: "ready"; decks: Deck[] }
+  | { phase: "error"; message: string };
+
+const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
+
+export default function HomePage() {
+  const router = useRouter();
+  const [email, setEmail] = useState<string>();
+  const [shelf, setShelf] = useState<Shelf>({ phase: "loading" });
+
+  const loadDecks = useCallback(async () => {
+    setShelf({ phase: "loading" });
+    try {
+      const r = await listDecks();
+      setShelf({ phase: "ready", decks: r.decks });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      setShelf({
+        phase: "error",
+        message:
+          e instanceof Error ? e.message : "Couldn't fetch your decks.",
+      });
+    }
+  }, [router]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Auth and data failures are different problems: only the first
+      // sends you to the sign-in desk.
+      try {
+        const user = await getCurrentUser();
+        if (cancelled) return;
+        setEmail(user.signInDetails?.loginId);
+      } catch {
+        if (!cancelled) router.replace("/login");
+        return;
+      }
+      void loadDecks();
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router, loadDecks]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="container">
+      <header className="masthead">
+        <h1>
+          en<em>gram</em>
+        </h1>
+        <p className="tagline">
+          turn anything you read into memories that stick
+        </p>
+        {/* always rendered — the masthead must not jump when auth resolves */}
+        <p className="whoami">
+          {email ? (
+            <>
+              {email}{" "}
+              <button
+                type="button"
+                onClick={() =>
+                  signOut()
+                    .catch(() => undefined) // signed out locally either way
+                    .finally(() => router.replace("/login"))
+                }
+              >
+                sign out
+              </button>
+            </>
+          ) : (
+            " "
+          )}
+        </p>
+      </header>
+
+      <UploadForm />
+
+      <h2 id="decks-heading">Your decks</h2>
+
+      {shelf.phase === "loading" && (
+        <div role="status" aria-labelledby="decks-heading">
+          <span className="sr-only">Fetching your decks…</span>
+          <ul className="deck-list" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <li key={i} className="skeleton-deck">
+                <span
+                  className="skeleton-line"
+                  style={{ width: `${52 - i * 9}%` }}
+                />
+                <span className="skeleton-line thin" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {shelf.phase === "error" && (
+        <div className="trouble-note" role="alert">
+          <p className="error">{shelf.message}</p>
+          <button type="button" onClick={() => void loadDecks()}>
+            try again
+          </button>
+        </div>
+      )}
+
+      {shelf.phase === "ready" && shelf.decks.length === 0 && (
+        <div className="empty-note">
+          <p className="empty-title">Nothing on the shelf yet.</p>
+          <p>
+            Your first deck starts in the box above — drop in lecture notes, a
+            textbook chapter, a photo of the whiteboard. Anything worth
+            remembering.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      )}
+
+      {shelf.phase === "ready" && shelf.decks.length > 0 && (
+        <ul className="deck-list">
+          {shelf.decks.map((deck, i) => (
+            <li
+              key={deck.deckId}
+              className="deck-card"
+              style={{ animationDelay: `${Math.min(i, 8) * 70}ms` }}
+            >
+              <Link href={`/decks/${deck.deckId}`}>
+                <span className={`stamp stamp-${deck.status}`}>
+                  {deck.status}
+                </span>
+                <span className="deck-title">{deck.title}</span>
+                <span className="deck-meta">
+                  {deck.status === "ready"
+                    ? `${plural(deck.cardCount ?? 0, "card")} · ${plural(deck.quizCount ?? 0, "question")}`
+                    : new Date(deck.createdAt).toLocaleDateString()}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
   );
 }

@@ -1,5 +1,6 @@
 import type {
   APIGatewayProxyEventV2,
+  APIGatewayProxyEventV2WithJWTAuthorizer,
   APIGatewayProxyResultV2,
 } from "aws-lambda";
 
@@ -10,12 +11,12 @@ import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { randomUUID } from "node:crypto";
 import {
   CreateUploadSchema,
-  DEMO_USER_ID,
   deckSk,
   getDocClient,
   tableName,
   userPk,
 } from "@engram/shared";
+import { error } from "node:console";
 
 const s3 = new S3Client({});
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -29,13 +30,20 @@ function json(statusCode: number, body: unknown): APIGatewayProxyResultV2 {
   };
 }
 
+function userIdFromEvent(
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
+): string | undefined {
+  const sub = event.requestContext.authorizer?.jwt?.claims?.sub;
+  return typeof sub === "string" && sub ? sub : undefined;
+}
+
 function sanitizeFilename(filename: string): string {
   const base = filename.split("/").pop()!.split("\\").pop()!;
   return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "upload";
 }
 
 export async function handler(
-  event: APIGatewayProxyEventV2,
+  event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): Promise<APIGatewayProxyResultV2> {
   let raw: unknown;
   try {
@@ -53,19 +61,22 @@ export async function handler(
     return json(400, { error: "Invalid request", issues: parsed.error.issues });
   }
 
+  const userId = userIdFromEvent(event);
+  if (!userId) return json(401, { error: "Unauthenticated" });
+
   const { filename, contentType } = parsed.data;
   const deckId = randomUUID();
-  const key = `uploads/${DEMO_USER_ID}/${deckId}/${sanitizeFilename(filename)}`;
+  const key = `uploads/${userId}/${deckId}/${sanitizeFilename(filename)}`;
   const createdAt = new Date().toISOString();
 
   await getDocClient().send(
     new PutCommand({
       TableName: tableName(),
       Item: {
-        PK: userPk(DEMO_USER_ID),
+        PK: userPk(userId),
         SK: deckSk(deckId),
         deckId,
-        userId: DEMO_USER_ID,
+        userId: userId,
         title: filename,
         status: "awaiting-upload",
         sourceKey: key,
