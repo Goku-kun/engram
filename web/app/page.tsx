@@ -123,9 +123,8 @@ export default function HomePage() {
         <div className="empty-note">
           <p className="empty-title">Nothing on the shelf yet.</p>
           <p>
-            Your first deck starts in the box above — drop in lecture notes, a
-            textbook chapter, a photo of the whiteboard. Anything worth
-            remembering.
+            Your first deck starts in the box above. Drop in lecture notes or a
+            photo of the whiteboard, anything worth remembering.
           </p>
         </div>
       )}

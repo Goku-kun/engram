@@ -65,7 +65,7 @@ export default function DeckPage({
 
   const deckTitle = data?.deck.title;
   useEffect(() => {
-    if (deckTitle) document.title = `${deckTitle} — engram`;
+    if (deckTitle) document.title = `${deckTitle} · engram`;
   }, [deckTitle]);
 
   function onTabKeyDown(e: React.KeyboardEvent<HTMLElement>) {
@@ -99,11 +99,11 @@ export default function DeckPage({
       </div>
     );
   } else if (error && !data) {
-    announce = "Trouble fetching this deck — retrying.";
+    announce = "Trouble fetching this deck. Retrying.";
     content = (
       <div className="trouble-note" role="alert">
         <p className="error">{error}</p>
-        <p className="hint">retrying automatically — this page updates itself</p>
+        <p className="hint">retrying automatically · this page updates itself</p>
       </div>
     );
   } else if (!data) {
@@ -138,11 +138,11 @@ export default function DeckPage({
               Claude is reading your pages and writing your cards…
             </p>
             <p className="hint">
-              usually 20–60 seconds — this page updates itself
+              usually 20 to 60 seconds · this page updates itself
             </p>
             {error && (
               <p className="hint reconnect" role="alert">
-                connection hiccup — retrying…
+                connection hiccup, retrying…
               </p>
             )}
           </div>
@@ -157,18 +157,18 @@ export default function DeckPage({
             <span className="stamp stamp-failed">failed</span>
             <p className="error">
               Claude couldn&apos;t make a deck out of this one
-              {deck.error ? ` — ${deck.error}` : "."}
+              {deck.error ? `: ${deck.error}` : "."}
             </p>
             <p>
-              It usually helps to re-upload a clearer scan, a smaller file, or
-              a text export instead of a photo.
+              A clearer scan usually helps, or a text export instead of a
+              photo.
             </p>
             <Link href="/">← try another upload</Link>
           </div>
         </>
       );
     } else {
-      announce = `Deck ready — ${cards.length} cards, ${quiz.length} questions.`;
+      announce = `Deck ready: ${cards.length} cards, ${quiz.length} questions.`;
       content = (
         <>
           <h1>{deck.title}</h1>

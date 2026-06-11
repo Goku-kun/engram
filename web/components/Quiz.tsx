@@ -41,8 +41,8 @@ export function Quiz({ deckId, quiz, onSubmitted }: QuizProps) {
       <div className="empty-note">
         <p className="empty-title">No questions for this one.</p>
         <p>
-          The source may have been too short to quiz on — the cards tab still
-          has whatever Claude could glean.
+          The source may have been too short to quiz on. The cards tab has
+          whatever Claude could glean.
         </p>
       </div>
     );

@@ -35,22 +35,22 @@ export function authErrorMessage(e: unknown, fallback: string): string {
       case "NotAuthorizedException":
         return "That email and password don't match our records.";
       case "UserNotConfirmedException":
-        return "This account hasn't been confirmed yet — check your email for the code.";
+        return "This account hasn't been confirmed yet. Check your email for the code.";
       case "UsernameExistsException":
-        return "You already have an account with that email — sign in instead.";
+        return "You already have an account with that email. Sign in instead.";
       case "InvalidPasswordException":
         return "Passwords need at least 10 characters.";
       case "InvalidParameterException":
-        return "That doesn't look quite right — check the email and password.";
+        return "That doesn't look quite right. Check the email and password.";
       case "LimitExceededException":
       case "TooManyRequestsException":
-        return "Too many attempts — wait a minute, then try again.";
+        return "Too many attempts. Wait a minute and try again.";
       case "CodeMismatchException":
-        return "That code doesn't match — double-check the email.";
+        return "That code doesn't match what we sent. Double-check the email.";
       case "ExpiredCodeException":
-        return "That code has expired — use “resend code” to get a fresh one.";
+        return 'That code has expired. Use "resend code" and we\'ll send another.';
       case "NetworkError":
-        return "Can't reach the sign-in desk — check your connection and try again.";
+        return "Can't reach the sign-in desk. Check your connection and try again.";
     }
   }
   return e instanceof Error ? e.message : fallback;

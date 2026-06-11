@@ -37,16 +37,16 @@ export class ApiError extends Error {
 function friendly(status: number, serverMessage?: string): string {
   switch (status) {
     case 401:
-      return "Your session has expired — sign in again.";
+      return "Your session has expired. Sign in again to keep going.";
     case 403:
       return "That deck is on someone else's desk.";
     case 404:
-      return "That deck isn't in the catalog — it may have been removed.";
+      return "That deck isn't in the catalog. It may have been removed.";
     case 429:
-      return "Too many requests at once — give it a moment, then try again.";
+      return "Too many requests at once. Give it a moment and try again.";
     default:
       if (status >= 500)
-        return "The library hit a snag on our end — try again in a moment.";
+        return "The library hit a snag on our end. Try again in a moment.";
       return serverMessage ?? `Request failed (${status}).`;
   }
 }
@@ -69,8 +69,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const timedOut = e instanceof DOMException && e.name === "TimeoutError";
     throw new ApiError(
       timedOut
-        ? "The library is taking too long to answer — try again."
-        : "Can't reach the library — check your connection and try again.",
+        ? "The library is taking too long to answer. Try again in a bit."
+        : "Can't reach the library. Check your connection and try again.",
       0,
     );
   }
@@ -107,13 +107,13 @@ export const submitAttempt = (deckId: string, answers: number[]) =>
 
 export async function uploadFile(file: File): Promise<{ deckId: string }> {
   if (file.size === 0)
-    throw new ApiError("That file is empty — nothing to read.", 400);
+    throw new ApiError("That file is empty. Pick one with something in it.", 400);
   if (file.size > MAX_UPLOAD_BYTES) {
     const mb = new Intl.NumberFormat(undefined, {
       maximumFractionDigits: 1,
     }).format(file.size / (1024 * 1024));
     throw new ApiError(
-      `That file is ${mb} MB — the limit is 20 MB. Try a smaller export or split it up.`,
+      `That file is ${mb} MB and the limit is 20 MB. Try a smaller export, or split it in two.`,
       400,
     );
   }
@@ -137,13 +137,13 @@ export async function uploadFile(file: File): Promise<{ deckId: string }> {
     s3Res = await fetch(upload.url, { method: "POST", body: form });
   } catch {
     throw new ApiError(
-      "The upload didn't make it to the shelf — check your connection and try again.",
+      "The upload didn't make it to the shelf. Check your connection and try again.",
       0,
     );
   }
   if (!s3Res.ok)
     throw new ApiError(
-      `The upload didn't make it to the shelf (${s3Res.status}) — try again.`,
+      `The upload didn't make it to the shelf (${s3Res.status}). Try again.`,
       s3Res.status,
     );
 

@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [resendError, setResendError] = useState<string>();
 
   useEffect(() => {
-    document.title = "sign in — engram";
+    document.title = "sign in · engram";
   }, []);
 
   function switchMode(next: Mode) {
@@ -93,7 +93,7 @@ export default function LoginPage() {
         username: pendingEmail,
         confirmationCode: String(fd.get("code")).trim(),
       });
-      setNotice("Account confirmed — sign in below.");
+      setNotice("Account confirmed. Sign in below.");
       setMode("signin");
       return undefined;
     } catch (e) {

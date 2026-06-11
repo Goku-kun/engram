@@ -12,8 +12,8 @@ export function Flashcards({ cards }: { cards: Card[] }) {
       <div className="empty-note">
         <p className="empty-title">No cards in this deck.</p>
         <p>
-          The source may have been too thin to study from — try uploading a
-          longer or clearer document.
+          The source may have been too thin to study from. Try a longer or
+          clearer document.
         </p>
       </div>
     );

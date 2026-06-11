@@ -41,7 +41,7 @@ export function UploadForm() {
         <span className="upload-title">
           {isPending ? "Filing your pages…" : "Drop anything worth remembering"}
         </span>
-        <span className="upload-hint">pdf · image · text — max 20 mb</span>
+        <span className="upload-hint">pdf · image · text · max 20 mb</span>
       </label>
       {error && (
         <p id="upload-error" className="error" role="alert">
