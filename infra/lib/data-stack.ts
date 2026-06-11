@@ -29,7 +29,7 @@ export class DataStack extends cdk.Stack {
           allowedMethods: [s3.HttpMethods.POST],
           allowedOrigins: [
             "http://localhost:3000",
-            "https://engram-delta.vercel.app/",
+            "https://engram-delta.vercel.app",
           ],
           allowedHeaders: ["*"],
           maxAge: 3600,

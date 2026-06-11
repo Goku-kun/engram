@@ -46,7 +46,7 @@ export class ApiStack extends cdk.Stack {
       corsPreflight: {
         allowOrigins: [
           "http://localhost:3000",
-          "https://engram-delta.vercel.app/",
+          "https://engram-delta.vercel.app",
         ],
         allowMethods: [
           apigwv2.CorsHttpMethod.GET,
