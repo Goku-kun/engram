@@ -9,16 +9,20 @@ deck.
 
 ## How it works
 
-```
-browser ── POST /uploads ────► API Gateway ──► upload-url Lambda
-   │                                             creates the deck record,
-   │                                             returns a presigned S3 POST
-   ├── POST file ────────────► S3
-   │                            └─ S3 event ──► processor Lambda
-   │                                             calls Claude, writes cards,
-   │                                             quiz, summary ──► DynamoDB
-   └── GET /decks/{id} ──────► API Gateway ──► api Lambda ──► DynamoDB
-       (poll until ready)
+```mermaid
+flowchart TD
+    browser([browser])
+
+    browser -->|"POST /uploads"| apigwA[API Gateway]
+    apigwA --> upload["upload-url Lambda<br/>creates deck record,<br/>returns presigned S3 POST"]
+
+    browser -->|"POST file"| s3[(S3)]
+    s3 -->|"S3 event"| processor["processor Lambda<br/>calls Claude, writes<br/>cards, quiz, summary"]
+    processor --> ddb[(DynamoDB)]
+
+    browser -->|"GET /decks/{id} — poll until ready"| apigwB[API Gateway]
+    apigwB --> api[api Lambda]
+    api --> ddb
 ```
 
 One constraint shapes the whole design: Claude can take a minute or more to write
