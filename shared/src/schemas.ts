@@ -41,6 +41,10 @@ export const StudyPackSchema = z.object({
 
 export type StudyPack = z.infer<typeof StudyPackSchema>;
 
+export const AskSchema = z.object({
+  question: z.string().min(3).max(500),
+});
+
 // ---------- API request bodies ----------
 
 export const ALLOWED_CONTENT_TYPES = [

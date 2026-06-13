@@ -1,7 +1,17 @@
 {
   "app": "npx ts-node --prefer-ts-exts bin/engram.ts",
   "watch": {
-    "include": ["**"],
-    "exclude": ["node_modules", "cdk.out"]
+    "include": [
+      "bin/**",
+      "lib/**",
+      "../shared/src/**",
+      "../services/*/src/**"
+    ],
+    "exclude": [
+      "node_modules",
+      "cdk.out",
+      "**/*.d.ts",
+      "**/*.test.ts"
+    ]
   }
 }

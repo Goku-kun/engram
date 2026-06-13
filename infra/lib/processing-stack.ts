@@ -11,6 +11,8 @@ import * as path from "node:path";
 interface ProcessingStackProps extends cdk.StackProps {
   table: dynamodb.ITable;
   bucket: s3.IBucket;
+  vectorBucketName: string;
+  vectorIndexName: string;
 }
 
 const API_KEY_PARAM = "/engram/anthropic-api-key";
@@ -29,6 +31,8 @@ export class ProcessingStack extends cdk.Stack {
         TABLE_NAME: props.table.tableName,
         ANTHROPIC_API_KEY_PARAM: API_KEY_PARAM,
         ENGRAM_MODEL: "claude-opus-4-8",
+        VECTOR_BUCKET: props.vectorBucketName,
+        VECTOR_INDEX: props.vectorIndexName,
       },
     });
 
@@ -44,6 +48,31 @@ export class ProcessingStack extends cdk.Stack {
             resource: "parameter",
             resourceName: API_KEY_PARAM.slice(1), // ARN form has no leading slash
           }),
+        ],
+      }),
+    );
+
+    const vectorIndexArn = this.formatArn({
+      service: "s3vectors",
+      resource: "bucket",
+      resourceName: `${props.vectorBucketName}/index/${props.vectorIndexName}`,
+    });
+    processor.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "s3vectors:PutVectors",
+          "s3vectors:QueryVectors",
+          "s3vectors:GetVectors",
+        ],
+        resources: [vectorIndexArn],
+      }),
+    );
+    processor.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["bedrock:InvokeModel"],
+        resources: [
+          // foundation-model ARNs have an EMPTY account field — that's correct
+          `arn:aws:bedrock:${this.region}::foundation-model/amazon.titan-embed-text-v2:0`,
         ],
       }),
     );

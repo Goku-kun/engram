@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "watch": "cdk watch EngramApi EngramProcessing --hotswap-fallback"
   },
   "devDependencies": {
     "@types/node": "^20.19.42",

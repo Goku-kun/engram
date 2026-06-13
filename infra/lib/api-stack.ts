@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
 import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -15,7 +16,11 @@ interface ApiStackProps extends cdk.StackProps {
   bucket: s3.IBucket;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
+  vectorBucketName: string;
+  vectorIndexName: string;
 }
+
+const API_KEY_PARAM = "/engram/anthropic-api-key";
 
 export class ApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ApiStackProps) {
@@ -71,9 +76,51 @@ export class ApiStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(30),
       environment: {
         TABLE_NAME: props.table.tableName,
+        VECTOR_BUCKET: props.vectorBucketName,
+        VECTOR_INDEX: props.vectorIndexName,
+        ANTHROPIC_API_KEY_PARAM: API_KEY_PARAM,
+        ENGRAM_MODEL: "claude-opus-4-8",
       },
     });
     props.table.grantReadWriteData(apiFn);
+
+    apiFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: [
+          this.formatArn({
+            service: "ssm",
+            resource: "parameter",
+            resourceName: API_KEY_PARAM.slice(1), // ARN form has no leading slash
+          }),
+        ],
+      }),
+    );
+
+    const vectorIndexArn = this.formatArn({
+      service: "s3vectors",
+      resource: "bucket",
+      resourceName: `${props.vectorBucketName}/index/${props.vectorIndexName}`,
+    });
+    apiFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "s3vectors:PutVectors",
+          "s3vectors:QueryVectors",
+          "s3vectors:GetVectors",
+        ],
+        resources: [vectorIndexArn],
+      }),
+    );
+    apiFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["bedrock:InvokeModel"],
+        resources: [
+          // foundation-model ARNs have an EMPTY account field — that's correct
+          `arn:aws:bedrock:${this.region}::foundation-model/amazon.titan-embed-text-v2:0`,
+        ],
+      }),
+    );
 
     const apiIntegration = new HttpLambdaIntegration("ApiIntegration", apiFn);
     httpApi.addRoutes({
@@ -89,6 +136,12 @@ export class ApiStack extends cdk.Stack {
     httpApi.addRoutes({
       path: "/decks/{deckId}/attempts",
       methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.POST],
+      integration: apiIntegration,
+    });
+
+    httpApi.addRoutes({
+      path: "/ask",
+      methods: [apigwv2.HttpMethod.POST],
       integration: apiIntegration,
     });
 

@@ -23,6 +23,11 @@ export interface AttemptResult {
   explanation: string;
 }
 
+export interface AskResponse {
+  answer: string;
+  sources: { deckId: string; deckTitle: string }[];
+}
+
 /** status 0 = never reached the server (offline, DNS, timeout). */
 export class ApiError extends Error {
   constructor(
@@ -85,6 +90,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export const askNotes = (question: string) =>
+  request<AskResponse>("/ask", {
+    method: "POST",
+    body: JSON.stringify({ question }),
+  });
+
 export const listDecks = () =>
   request<{ decks: Deck[] }>("/decks", { cache: "no-store" });
 
@@ -107,7 +118,10 @@ export const submitAttempt = (deckId: string, answers: number[]) =>
 
 export async function uploadFile(file: File): Promise<{ deckId: string }> {
   if (file.size === 0)
-    throw new ApiError("That file is empty. Pick one with something in it.", 400);
+    throw new ApiError(
+      "That file is empty. Pick one with something in it.",
+      400,
+    );
   if (file.size > MAX_UPLOAD_BYTES) {
     const mb = new Intl.NumberFormat(undefined, {
       maximumFractionDigits: 1,

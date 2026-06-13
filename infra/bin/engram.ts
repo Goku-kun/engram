@@ -12,8 +12,12 @@ new ApiStack(app, "EngramApi", {
   bucket: data.bucket,
   userPool: data.userPool,
   userPoolClient: data.userPoolClient,
+  vectorBucketName: data.vectorBucketName,
+  vectorIndexName: data.vectorIndexName,
 });
 new ProcessingStack(app, "EngramProcessing", {
   table: data.table,
   bucket: data.bucket,
+  vectorBucketName: data.vectorBucketName,
+  vectorIndexName: data.vectorIndexName,
 });

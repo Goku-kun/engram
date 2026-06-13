@@ -32,8 +32,7 @@ export default function HomePage() {
       }
       setShelf({
         phase: "error",
-        message:
-          e instanceof Error ? e.message : "Couldn't fetch your decks.",
+        message: e instanceof Error ? e.message : "Couldn't fetch your decks.",
       });
     }
   }, [router]);
@@ -92,6 +91,9 @@ export default function HomePage() {
       <UploadForm />
 
       <h2 id="decks-heading">Your decks</h2>
+      <p className="hint">
+        <Link href="/ask">ask your notes →</Link>
+      </p>
 
       {shelf.phase === "loading" && (
         <div role="status" aria-labelledby="decks-heading">

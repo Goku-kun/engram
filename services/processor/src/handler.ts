@@ -24,9 +24,12 @@ import {
   tableName,
   userPk,
 } from "@engram/shared";
-import { getModel } from "./model";
+import { getModel, getEmbeddingModel } from "./model";
+import { embedMany } from "ai";
+import { PutVectorsCommand, S3VectorsClient } from "@aws-sdk/client-s3vectors";
 
 const s3 = new S3Client({});
+const s3vectorsClient = new S3VectorsClient({});
 
 const PROMPT = `You are an expert author of study material, designing for recall a month
 from now, not recognition today. The attachment is something the user wants to learn
@@ -294,10 +297,48 @@ export async function handler(event: S3Event): Promise<void> {
         cards: pack.cards.length,
         quiz: pack.quiz.length,
       });
+
+      try {
+        await indexStudyPack(userId, deckId, pack);
+      } catch (error) {
+        console.error("Indexing failed (deck still usable)", { deckId, error });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error("Processing failed", { deckId, message });
       await setDeckStatus(userId, deckId, { status: "failed", error: message });
     }
   }
+}
+
+/** Each summary paragraph and each card becomes one vector. */
+async function indexStudyPack(
+  userId: string,
+  deckId: string,
+  pack: StudyPack,
+): Promise<void> {
+  const values = [
+    ...pack.summary
+      .split("\n\n")
+      .map((p) => p.trim())
+      .filter(Boolean),
+    ...pack.cards.map((c) => `${c.front}\n${c.back}`),
+  ];
+
+  const { embeddings } = await embedMany({
+    model: getEmbeddingModel(),
+    values,
+  });
+
+  await s3vectorsClient.send(
+    new PutVectorsCommand({
+      vectorBucketName: process.env.VECTOR_BUCKET!,
+      indexName: process.env.VECTOR_INDEX!,
+      vectors: embeddings.map((embedding, i) => ({
+        key: `${deckId}#${i}`,
+        data: { float32: embedding },
+        metadata: { userId, deckId, deckTitle: pack.title, text: values[i]! },
+      })),
+    }),
+  );
 }

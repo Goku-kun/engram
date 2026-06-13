@@ -983,6 +983,7 @@ h2 {
 
 /* fingers are wider than cursors — meet the 44px floor on touch devices */
 @media (pointer: coarse) {
+
   form button[type="submit"],
   .card-nav button,
   .trouble-note button,
@@ -993,4 +994,55 @@ h2 {
   .option {
     padding-block: 0.6rem;
   }
+}
+
+/* ---------- ask your notes ---------- */
+
+.ask-form {
+  display: flex;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.ask-form input {
+  flex: 1;
+  font: inherit;
+  font-family: var(--font-body), ui-sans-serif, sans-serif;
+  color: var(--ink);
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--paper-edge);
+  border-radius: 2px;
+  background: var(--paper);
+}
+
+.ask-form input:focus {
+  outline: 2px solid var(--pen-blue);
+  outline-offset: 1px;
+}
+
+.ask-answer {
+  background: var(--paper);
+  box-shadow:
+    0 0 0 1px var(--paper-edge),
+    5px 6px 0 var(--shadow);
+  padding: 1.4rem 1.6rem;
+}
+
+.ask-question {
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
+  font-size: 1.2rem;
+  margin: 0 0 0.75rem;
+}
+
+.ask-sources {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+  margin: 1rem 0 0;
+}
+
+.ask-sources a {
+  color: var(--pen-blue);
 }
